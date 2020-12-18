@@ -2,6 +2,9 @@ import pytest
 from module import data_class
 from module.file_parse import FileHandler
 
+
+
+
 test_file_path = 'test/test_file/test_link_list.csv'
 
 fileHandler_obj = FileHandler(test_file_path)
@@ -9,6 +12,20 @@ fileHandler_obj = FileHandler(test_file_path)
 def test_get_file_list():
     result = fileHandler_obj.get_file_list()
     assert result == 'a'
+
+def test_open_excel_file_list():
+
+    test_input_file_path = "input.xlsx"
+    fileHandler_obj.open_excel_file_list(test_input_file_path)
+    
+    assert fileHandler_obj.excel_sheet == 'a'
+
+def test_get_sheet_data():
+    
+    test_input_file_path = "input.xlsx"
+    fileHandler_obj.open_excel_file_list(test_input_file_path)
+    result = fileHandler_obj.get_sheet_data()
+    assert result =='a'
 
 def test_write_csv():
 

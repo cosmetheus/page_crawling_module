@@ -2,58 +2,88 @@
 # 해당 파일 내용 리스트업 
 import csv
 import os
-
+import logging
 import dataclasses
-from config import setting
+import openpyxl
+from openpyxl import load_workbook
 from module import data_class
-from config.logconfig import logger 
+
 
 
 class FileHandler:
-    def __init__(self, file_path:str):
-        self.file_path = file_path
-        self.file_type = os.path.splitext(file_path)[-1]
-        self.file_name = os.path.splitext(file_path)[0].split("/")[-1]
-
-    def get_file_list(self) -> data_class.NewsItemList:
+    @classmethod
+    def open_excel_file_list(cls, file_path:str) -> openpyxl.worksheet._read_only.ReadOnlyWorksheet:
         """
-        self.file_type 에 따라 self.file_path의 파일분석후 파일정보로 data_class.NewsItem 객체를 생성한다.
+        openpyxl 라이브러리를 사용하여
+        self.file_path 경로의 excel 파일을 읽어 openpyxl 객체를 생성후
+        self.excel_sheet에 할당
         """
 
-        with open(self.file_path, 'r', encoding='utf-8') as csv_file:        
-            csv_list =  list(csv.reader(csv_file))
+        file_type = os.path.splitext(file_path)[-1]
+
+        if file_type == '.xlsx':
+
+            excle_file = load_workbook(file_path, read_only=True)
+            sheet = excle_file.active
             
-        csv_news_list = []
-
-        for csv_news in csv_list[1:]:
-
-            # csv_news[0] : news name
-            # csv_news[1] : news link
-            news_item = data_class.NewsItem(
-                name= csv_news[0],
-                link= csv_news[1]
-                )
-
-            csv_news_list.append(news_item)
-
-        logger.info("load {len(csv_news_list)} csv row")
-
-        return data_class.NewsItemList(csv_news_list)
-
-    def write_csv(self, news_list: data_class.NewsItemList):
+            return sheet
         
-        with open(f"{setting.SAVE_FILE_PATH}/{self.file_name}_string.csv", 'w', encoding='utf-8') as csv_file:
+        else:
+            # 파일 타입이 .xlsx 가 아닐겨우 
+            raise TypeError('chack file_path file type / this program suport .xlsx file')
+    
+    
+    @classmethod
+    def get_sheet_data(cls, excel_sheet:openpyxl.worksheet._read_only.ReadOnlyWorksheet) -> data_class.PageItemList:
+        """
+        openpyxl.worksheet._read_only.ReadOnlyWorksheet 객체를 읽어 링크데이터들 을 
+        data_class.NewsItemList객체로 만들어 반환
+        """
+
+        # slef.sheet를 row의 배열로 만든다 (가장 상위 row는 column name 임으로 제외 
+        row_list = list(excel_sheet)[1:]
+        
+
+        # input.xlsx column을 data_class.PageItem객체로 만들어 저장
+        page_item_list = []
+        
+        # input.xlsx columns
+        # article_type [0]
+        # brand [1]
+        # title [2]
+        # date [3]
+        # link [4]
+
+        for row in row_list:
+            page_item = data_class.PageItem(
+                article_type = row[0].value,
+                brand = [i.strip() for i in  row[1].value.split(',')],
+                title = row[2].value,
+                published_at = row[3].value,
+                link = row[4].value
+            )
+            page_item_list.append(page_item)
+
+        logging.info(f"load {len(page_item_list)} csv row")
+
+        return data_class.PageItemList(page_item_list)
+    
+
+    @classmethod
+    def write_csv(cls, file_path:str,file_name:str ,page_item_list: data_class.PageItemList):
+        
+        with open(f"{file_path}/{file_name}.csv", 'w', encoding='utf-8') as csv_file:
             # csv파일의 첫번째 row에 들어갈 컬럼 이름을 정의
-            csv_columns = ['name','link','text']
+            csv_columns = ['link','text']
             
             # 컬럼 이름이 정의된 csv 파일 객체를 생성
             writer = csv.DictWriter(csv_file, fieldnames=csv_columns)
 
             # csv 파일의 row를 생성
             writer.writeheader()
-            for news_item in news_list.news_item_list:
+            for news_item in page_item_list.page_item_list:
                 
-                writer.writerow(dataclasses.asdict(news_item))
+                writer.writerow(news_item.get_row())
         
-        logger.info(f"create file : {setting.SAVE_FILE_PATH}/{self.file_name}_string.csv")
+        logging.info(f"create file : {file_path}/{file_name}.csv")
             
