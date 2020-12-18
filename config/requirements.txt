@@ -1,2 +1,4 @@
-requests
-bs4
+openpyxl
+fake_useragent
+
+selenium

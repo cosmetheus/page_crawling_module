@@ -1,78 +1,94 @@
-
-from logging import log
-from bs4 import BeautifulSoup
-from module import data_class  
-import bs4
-import requests
+import random
 import re
-import sys
-from config.logconfig import logger
-from unicodedata import normalize
+from module import data_class  
+import logging
+from fake_useragent import UserAgent
 
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
-class ParsePage:
+class ParsePage_Selenium:
     """
-    객체를 생성할때 page_url을 받아 page_url이 가지고있는 파
+    data_class.PageItemList 안의 data_class.PageItem 의 link가 가르키는 페이지를
+    selenium으로 접속하여 body 태그내부에 있는 text를 모두 가져온뒤
+    특수문자(줄바꿈 포함)를 모두 제거한 문자열을
+    data_class.PageItem 의 text에 할당한다
     """
-    def __init__(self, news_item : data_class.NewsItem):
-        self.news_item = news_item
-        self.page_html : str
-        self.page_body_heml : bs4.element.Tag
-        
-    def get_page(self):
-        
-        # self.page_url의 url로 페이지 정보를 가져와 requests객체로 만듬
-        try:
-            page_link = self.news_item.link.strip()
-            
-            logger.info(f"search  page : {page_link}")
-            page_obj = requests.get(page_link)
-            
-            # 결과를 self.page_html 저장
-            self.page_html = page_obj.text
-        
-        except Exception as error:
-            logger.exception(error)
-            sys.exit(error)
+    def __init__(self, page_item_list : data_class.PageItemList, driver_path:str):
+        self.page_item_list = page_item_list
+        self.driver_path = driver_path
 
 
-    def get_body_text(self):
-        # requests로 가져온 페이지의 html로 bs4 객체 생성
-        soupe = BeautifulSoup(self.page_html, 'html.parser')
+    def get_page_body(self, page_item:data_class.PageItem, driver:webdriver.Firefox, max_try_num:int =3):
+        """
+            driver가 위치한 페이지 body태그의 html을 가져온뒤
+            특수문자(줄바꿈 포함) 를 제가한 text를 반환한다
+        """
         
-        # bs4를 이용하여 tag_name : body부분을 추출
-        if soupe.find('body') != None:
-            # self.page_body_heml = soupe.find('body')
-            self.page_body_heml = soupe.select('body')[0]
-        else:
-            raise ValueError(f"fail get body \n origin_text : {self.page_html}")
-             
-        
-    def get_inner_text(self):
-        # self.page_body_heml 중 내용부분만 문자열로 추출
-        body_text = self.page_body_heml.text
+        # 에러가 발생할 경우 try_count 만큼 제시도
+        for _ in range(max_try_num):
 
-        # 특수문자가 제거된 문자열을 result에 할당
-        # regex: [^모든한글|띄어쓰기|모든숫자|모든영어]
-        
-        try:
-            # 글자 꺠진경우
-            normalize_text = normalize('NFC', body_text)
-            change_text = normalize_text.encode('ISO-8859-1').decode('cp949','ignore')
-            body_text = change_text
-        except UnicodeEncodeError :
-            # 정상 출력의 경우
-            pass
+            try:
+                # page_item.link의 주소로 페이지 이동
+                driver.get(page_item.link)
+                logging.info(f"search  page : {page_item.link}")
+                
+                # body가 로딩될때까지 10토동안 기다린후 body element를 가져옴
+                body_web_element = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "body"))
+                )
+                
+                # innertext 추출
+                inner_text = body_web_element.text
 
-        result = re.sub("[^가-힣ㄱ-ㅎ|\ |0-9|a-zA-Z]","",body_text)
-        
-        self.news_item.text = result
-        return self.news_item
+                #regex 로 특수문자 제거
+                result = re.sub("[^가-힣ㄱ-ㅎ|\ |0-9|a-zA-Z]","",inner_text)
 
-    def parsing(self):
-        self.get_page()
-        self.get_body_text()
-        result = self.get_inner_text()
+                page_item.text = result
+                
+                # 제시도 반복문 종료
+                break
 
-        return result
+            except TimeoutException as error:
+                page_item.text = 'this page was time out'
+                logging.exception(error)
 
+            except Exception as error:
+                page_item.text = f"""unexpected error
+                page_item:{page_item} """
+                logging.exception("""unexpected error""")
+
+
+    def driver_generator(self):
+        """
+            webdriver.Firefox를 생성하고 
+            self.page_item_list.page_item_list 에 항목 수만큼 self.get_page_body를 실행하는 yield를 생성한다.
+            이후 webdriver.Firefox를 종료하는 yield를 생성한다.
+        """
+
+        # Firerfox webdriver 생성
+        profile = webdriver.FirefoxProfile()
+        profile.set_preference("general.useragent.override", UserAgent().random)
+        driver = webdriver.Firefox(profile, executable_path = self.driver_path)
+
+        # Firerfox webdriver로 수행할 작업 정의
+        for page_item in self.page_item_list.page_item_list:
+            yield self.get_page_body(page_item, driver=driver)
+
+        # Firerfox webdriver 종료
+        yield driver.quit()
+
+
+    def get_result(self):
+        """text 값이 채워진 list[data_class.PageItem] 를 반환한다
+
+        :return: text 값이 채워진 list[data_class.PageItem]
+        :rtype: data_class.PageItemList
+        """
+
+        [page for page in self.driver_generator()]
+
+        return self.page_item_list
