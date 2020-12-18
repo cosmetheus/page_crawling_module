@@ -18,10 +18,10 @@ page_crawling_module은 입력된 페이지의 링크들에 접속해 패이지�
 
 ### define `input.csv`
 
-|제목|링크|
-|---|:---:|
-|<page_title>|<page_link>
-|<page_title>|<page_link>
+|텍스트타입|브랜드|제목|날자|URL|
+|---|:---:|:---:|:---:|:---:|
+|< article type >|< brand >|< title >|< published at >|< link >
+|< article type >|< brand >|< title >|< published at >|< link >
 .
 .
 .
