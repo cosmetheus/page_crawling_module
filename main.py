@@ -5,15 +5,6 @@ from config.logconfig import logger
 from module.file_parse import FileHandler
 from module.get_body_text import  ParsePage_Selenium
 
-def run():
-    """
-    input csv경로로 들어온 csv파일을 읽어 (title,link 컬럼을 가지고있음)
-    link가 가르키느 페이지의 body에 있는 text를 가져와 특수문자를 제거하고 
-    결과를 output csv의 경로로 반환한다.
-
-    input csv 파일과 output csv파일의 경로는 ./config/setting.py 에서 수정할수 있다.
-    """
-
 def run_selenium(
     input_file_path : str,
     output_file_path : str ,
