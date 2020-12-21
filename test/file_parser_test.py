@@ -5,36 +5,14 @@ from module.file_parse import FileHandler
 
 
 
-test_file_path = 'test/test_file/test_link_list.csv'
+test_file_path = 'prototype_cosmetics.xlsx'
 
-fileHandler_obj = FileHandler(test_file_path)
 
-def test_get_file_list():
-    result = fileHandler_obj.get_file_list()
-    assert result == 'a'
 
 def test_open_excel_file_list():
 
-    test_input_file_path = "input.xlsx"
-    fileHandler_obj.open_excel_file_list(test_input_file_path)
-    
-    assert fileHandler_obj.excel_sheet == 'a'
+    """file_path 에 있는 엑셀파일을 읽어 target_sheet_name 의 이름을 가진 시트의 row개수를 출력"""
 
-def test_get_sheet_data():
-    
-    test_input_file_path = "input.xlsx"
-    fileHandler_obj.open_excel_file_list(test_input_file_path)
-    result = fileHandler_obj.get_sheet_data()
-    assert result =='a'
-
-def test_write_csv():
-
-    # 테스트용 dataclass
-    test_news_item = data_class.NewsItem(
-        name='test', 
-        link='http://www.yakup.com/news/?nid=246818&mode=view', 
-        text=' 약업닷컴을 시작페이지로'
-    )
-    test_news_item_list = data_class.NewsItemList([test_news_item])
-
-    fileHandler_obj.write_csv(news_list=test_news_item_list)
+    sheet = FileHandler.open_excel_file_list(file_path= test_file_path, target_sheet_name= '설화수')
+    result = FileHandler.get_sheet_data(sheet)
+    assert len(result.page_item_list) == 'a'

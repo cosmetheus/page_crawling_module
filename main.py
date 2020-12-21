@@ -32,7 +32,7 @@ def run_selenium(
     """
     
     # excel 파일을 읽어옴
-    excel_sheet = FileHandler.open_excel_file_list(file_path= input_file_path)
+    excel_sheet = FileHandler.open_excel_file_list(input_file_path, target_sheet_name='아이오페')
 
     # row들을 dataclass로 변환후 리스트업
     page_item_list = FileHandler.get_sheet_data(excel_sheet)
@@ -45,8 +45,8 @@ def run_selenium(
 
 if __name__ == "__main__":
     run_selenium(
-        input_file_path = "input.xlsx",
+        input_file_path = "prototype_cosmetics.xlsx",
         output_file_path = ".",
-        output_file_name = "output_text",
+        output_file_name = "아이오페",
         geckodriver_path = "config/geckodriver",
     )

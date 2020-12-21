@@ -1,4 +1,4 @@
-import random
+import random, time
 import re
 from module import data_class  
 import logging
@@ -32,10 +32,13 @@ class ParsePage_Selenium:
         for _ in range(max_try_num):
 
             try:
+                # 페이지 로드가 10초이상 걸리면 timeout 에러를 발생
+                driver.set_page_load_timeout(30)
+
                 # page_item.link의 주소로 페이지 이동
                 driver.get(page_item.link)
                 logging.info(f"search  page : {page_item.link}")
-                
+
                 # body가 로딩될때까지 10토동안 기다린후 body element를 가져옴
                 body_web_element = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "body"))
@@ -47,6 +50,7 @@ class ParsePage_Selenium:
                 #regex 로 특수문자 제거
                 result = re.sub("[^가-힣ㄱ-ㅎ|\ |0-9|a-zA-Z]","",inner_text)
 
+
                 page_item.text = result
                 
                 # 제시도 반복문 종료
@@ -55,6 +59,7 @@ class ParsePage_Selenium:
             except TimeoutException as error:
                 page_item.text = 'this page was time out'
                 logging.exception(error)
+                break
 
             except Exception as error:
                 page_item.text = f"""unexpected error

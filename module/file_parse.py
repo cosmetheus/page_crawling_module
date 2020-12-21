@@ -12,7 +12,7 @@ from module import data_class
 
 class FileHandler:
     @classmethod
-    def open_excel_file_list(cls, file_path:str) -> openpyxl.worksheet._read_only.ReadOnlyWorksheet:
+    def open_excel_file_list(cls, file_path:str, target_sheet_name:str == None) -> openpyxl.worksheet._read_only.ReadOnlyWorksheet:
         """
         openpyxl 라이브러리를 사용하여
         self.file_path 경로의 excel 파일을 읽어 openpyxl 객체를 생성후
@@ -24,9 +24,15 @@ class FileHandler:
         if file_type == '.xlsx':
 
             excle_file = load_workbook(file_path, read_only=True)
-            sheet = excle_file.active
             
-            return sheet
+            sheet_names = excle_file.sheetnames
+            
+            if target_sheet_name == None:
+                target_sheet = excle_file[sheet_names[0]]
+            else:
+                target_sheet = excle_file[target_sheet_name]
+
+            return target_sheet
         
         else:
             # 파일 타입이 .xlsx 가 아닐겨우 
@@ -34,7 +40,7 @@ class FileHandler:
     
     
     @classmethod
-    def get_sheet_data(cls, excel_sheet:openpyxl.worksheet._read_only.ReadOnlyWorksheet) -> data_class.PageItemList:
+    def get_sheet_data(cls, excel_sheet:openpyxl.worksheet._read_only.ReadOnlyWorksheet ) -> data_class.PageItemList:
         """
         openpyxl.worksheet._read_only.ReadOnlyWorksheet 객체를 읽어 링크데이터들 을 
         data_class.NewsItemList객체로 만들어 반환
@@ -59,8 +65,7 @@ class FileHandler:
                 article_type = row[0].value,
                 brand = [i.strip() for i in  row[1].value.split(',')],
                 title = row[2].value,
-                published_at = row[3].value,
-                link = row[4].value
+                link = row[3].value
             )
             page_item_list.append(page_item)
 

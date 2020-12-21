@@ -7,7 +7,6 @@ class PageItem:
     article_type : str
     brand : list[str]
     title : str
-    published_at : str
     link : str
     text : str = ""
 
